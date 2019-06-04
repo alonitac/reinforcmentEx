@@ -7,7 +7,6 @@
 # For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 
 import mdp, util
-
 from learningAgents import ValueEstimationAgent
 
 class ValueIterationAgent(ValueEstimationAgent):
@@ -34,10 +33,23 @@ class ValueIterationAgent(ValueEstimationAgent):
     self.mdp = mdp
     self.discount = discount
     self.iterations = iterations
-    self.values = util.Counter() # A Counter is a dict with default 0
-     
-    "*** YOUR CODE HERE ***"
-    
+    self.values = util.Counter()  # A Counter is a dict with default 0
+
+    for i in range(self.iterations):
+        current_values = util.Counter()
+        for state in mdp.getStates():
+            max_val = -float('inf')
+            for action in mdp.getPossibleActions(state):
+                max_val = max(
+                    max_val,
+                    sum([
+                        prob * (mdp.getReward(state, action, next_s) + self.discount * self.values[state])
+                        for next_s, prob in mdp.getTransitionStatesAndProbs(state, action)
+                    ])
+                )
+            current_values[state] = max_val
+        self.values = current_values
+
   def getValue(self, state):
     """
       Return the value of the state (computed in __init__).
@@ -52,8 +64,7 @@ class ValueIterationAgent(ValueEstimationAgent):
       necessarily create this quantity and you may have
       to derive it on the fly.
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return 1000
 
   def getPolicy(self, state):
     """
@@ -63,10 +74,17 @@ class ValueIterationAgent(ValueEstimationAgent):
       there are no legal actions, which is the case at the
       terminal state, you should return None.
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    max_val = -float('inf')
+    optimal_action = None
+    for action in self.mdp.getPossibleActions(state):
+        max_val_for_action = max([
+            self.values[next_s] for next_s, prob in self.mdp.getTransitionStatesAndProbs(state, action)
+        ])
+        if max_val_for_action > max_val:
+            max_val = max_val_for_action
+            optimal_action = action
+    return optimal_action
 
   def getAction(self, state):
     "Returns the policy at the state (no exploration)."
     return self.getPolicy(state)
-  
