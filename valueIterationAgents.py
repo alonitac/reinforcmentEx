@@ -66,7 +66,10 @@ class ValueIterationAgent(ValueEstimationAgent):
       necessarily create this quantity and you may have
       to derive it on the fly.
     """
-    return 10
+    return sum([
+        prob * (self.mdp.getReward(state, action, next_s) + self.discount * self.values[next_s])
+                        for next_s, prob in self.mdp.getTransitionStatesAndProbs(state, action)
+    ])
 
   def getPolicy(self, state):
     """
@@ -79,11 +82,11 @@ class ValueIterationAgent(ValueEstimationAgent):
     max_val = -float('inf')
     optimal_action = None
     for action in self.mdp.getPossibleActions(state):
-        max_val_for_action = max([
-            self.values[next_s] for next_s, prob in self.mdp.getTransitionStatesAndProbs(state, action)
+        action_val = sum([
+            self.values[next_s]*prob for next_s, prob in self.mdp.getTransitionStatesAndProbs(state, action)
         ])
-        if max_val_for_action > max_val:
-            max_val = max_val_for_action
+        if action_val > max_val:
+            max_val = action_val
             optimal_action = action
     return optimal_action
 
