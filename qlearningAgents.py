@@ -11,6 +11,7 @@ from learningAgents import ReinforcementAgent
 from featureExtractors import *
 
 import random,util,math
+import numpy as np
 
 class QLearningAgent(ReinforcementAgent):
   """
@@ -36,7 +37,7 @@ class QLearningAgent(ReinforcementAgent):
   def __init__(self, **args):
     "You can initialize Q-values here..."
     ReinforcementAgent.__init__(self, **args)
-    "*** YOUR CODE HERE ***"
+    self.states = dict()
 
   def getQValue(self, state, action):
     """
@@ -44,9 +45,12 @@ class QLearningAgent(ReinforcementAgent):
       Should return 0.0 if we never seen
       a state or (state,action) tuple
     """
-    "*** YOUR CODE HERE ***"    
-    util.raiseNotDefined()
-
+    sa_pair = (state, action)
+    if sa_pair in self.states:
+        return self.states[sa_pair]
+    else:
+      self.states.update({sa_pair: 0.0})
+      return 0.0
 
   def getValue(self, state):
     """
@@ -55,8 +59,12 @@ class QLearningAgent(ReinforcementAgent):
       there are no legal actions, which is the case at the
       terminal state, you should return a value of 0.0.
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    legalActions = self.getLegalActions(state)
+    if len(legalActions) == 0:  # terminal state
+        return 0.0
+    qvals = [self.getQValue(state, a) for a in legalActions]
+    return max(qvals)
 
   def getPolicy(self, state):
     """
@@ -64,8 +72,14 @@ class QLearningAgent(ReinforcementAgent):
       are no legal actions, which is the case at the terminal state,
       you should return None.
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    legalActions = self.getLegalActions(state)
+    if len(legalActions) == 0:  # terminal state
+        return None
+
+    qvals = [self.getQValue(state, a) for a in legalActions]
+    q_max = max(qvals)
+    best_actions = [legalActions[i] for i, x in enumerate(qvals) if x == q_max]
+    return random.choice(best_actions)
 
   def getAction(self, state):
     """
@@ -78,10 +92,11 @@ class QLearningAgent(ReinforcementAgent):
       HINT: You might want to use util.flipCoin(prob)
       HINT: To pick randomly from a list, use random.choice(list)
     """
-    # Pick Action
     legalActions = self.getLegalActions(state)
-    action = None
-    "*** YOUR CODE HERE ***"
+    if util.flipCoin(self.epsilon):  # random exploration
+        action = random.choice(legalActions)
+    else:
+        action = self.getPolicy(state)
     return action
 
   def update(self, state, action, nextState, reward):
@@ -92,9 +107,14 @@ class QLearningAgent(ReinforcementAgent):
 
       NOTE: You should never call this function,
       it will be called on your behalf
-    """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # """
+    sa_pair = (state, action)
+
+    prev_qval = self.getQValue(state, action)
+    next_qval = self.getValue(nextState)
+
+    self.states[sa_pair] = prev_qval + self.alpha*(reward + self.discount * next_qval - prev_qval)
+
 
 class PacmanQAgent(QLearningAgent):
   "Exactly the same as QLearningAgent, but with different default parameters"
@@ -139,24 +159,27 @@ class ApproximateQAgent(PacmanQAgent):
   def __init__(self, extractor='IdentityExtractor', **args):
     self.featExtractor = util.lookup(extractor, globals())()
     PacmanQAgent.__init__(self, **args)
-
-    # You might want to initialize weights here.
-    "*** YOUR CODE HERE ***"
+    self.weights = util.Counter()
 
   def getQValue(self, state, action):
     """
       Should return Q(state,action) = w * featureVector
       where * is the dotProduct operator
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    features = np.array(self.featExtractor.getFeatures(state, action))
+    weights = np.array(self.weights)
+    q = features.dot(weights)
+    return q
 
   def update(self, state, action, nextState, reward):
     """
        Should update your weights based on transition
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    correction = reward + self.discount * self.getValue(nextState) - self.getQValue(state, action)
+    features = self.featExtractor.getFeatures(state, action)
+
+    for feature in features:
+      self.weights[feature] += self.alpha * correction * features[feature]
 
   def final(self, state):
     "Called at the end of each game."
