@@ -38,8 +38,8 @@ def question3c():
 
 def question3d():
   answerDiscount = 1
-  answerNoise = 0.3
-  answerLivingReward = -1
+  answerNoise = 0.5
+  answerLivingReward = 0
   return answerDiscount, answerNoise, answerLivingReward
 
 def question3e():
